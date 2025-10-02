@@ -6,7 +6,7 @@ import { defaultStyleSheet } from '@/constants/Styles';
 
 const Page = () => {
   const [sets, setSets] = useState<
-    { set: Set; score: number; cards_correct: number; cards_wrong: number; id: string; xata: any }[]
+    { set: Set; score: number; cards_correct: number; cards_wrong: number; id: string; created_at: string }[]
   >([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -24,7 +24,7 @@ const Page = () => {
     score: number;
     cards_correct: number;
     cards_wrong: number;
-    xata: any;
+    created_at: string;
   }> = ({ item }) => {
     return (
       <View style={styles.setRow}>
@@ -32,7 +32,7 @@ const Page = () => {
           <View style={{ flex: 1 }}>
             <Text style={styles.rowTitle}>{item.set.title}</Text>
             <Text style={{ color: Colors.darkGrey }}>
-              Score: {item.score.toFixed(2)}, {item.xata.createdAt.substring(0, 10)}
+              Score: {item.score.toFixed(2)}, {item.created_at.substring(0, 10)}
             </Text>
           </View>
         </View>

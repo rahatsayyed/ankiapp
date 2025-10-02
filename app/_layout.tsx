@@ -3,9 +3,15 @@ import { Stack, useRouter } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 import Colors from '@/constants/Colors';
 import 'react-native-url-polyfill/auto';
+import { useEffect } from 'react';
+import { initDatabase } from '@/data/database';
 
 const RootLayoutNav = () => {
   const router = useRouter();
+
+  useEffect(() => {
+    initDatabase();
+  }, []);
   return (
     <Stack
       screenOptions={{
