@@ -4,7 +4,8 @@ import { TouchableOpacity } from 'react-native';
 import Colors from '@/constants/Colors';
 import 'react-native-url-polyfill/auto';
 import { useEffect } from 'react';
-import { initDatabase } from '@/data/database';
+import { initDatabase } from '@/data/database'
+import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 
 const RootLayoutNav = () => {
   const router = useRouter();
