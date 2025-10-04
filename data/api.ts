@@ -1,4 +1,4 @@
-import { executeSql, generateId } from './database';
+import { executeSql, querySql, generateId } from './database';
 
 export interface Set {
   cards: number;
@@ -18,37 +18,33 @@ export interface Card {
 export const createSet = async (set: Partial<Set>): Promise<Set> => {
   const id = generateId();
   const creator = 'local-user';
+  const title = set.title || '';
+  const description = set.description || '';
 
   await executeSql(
     'INSERT INTO sets (id, title, description, creator, cards) VALUES (?, ?, ?, ?, ?)',
-    [id, set.title || '', set.description || '', creator, 0]
+    [id, title, description, creator, 0]
   );
 
   return {
     id,
-    title: set.title || '',
-    description: set.description || '',
+    title,
+    description,
     creator,
     cards: 0,
   };
 };
 
 export const getSets = async (): Promise<Set[]> => {
-  const result = await executeSql('SELECT * FROM sets ORDER BY created_at DESC');
-  const sets: Set[] = [];
+  const rows = await querySql('SELECT * FROM sets ORDER BY created_at DESC');
 
-  for (let i = 0; i < result.rows.length; i++) {
-    const row = result.rows.item(i);
-    sets.push({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      creator: row.creator,
-      cards: row.cards,
-    });
-  }
-
-  return sets;
+  return rows.map((row: any) => ({
+    id: row.id,
+    title: row.title || '',
+    description: row.description || '',
+    creator: row.creator || 'local-user',
+    cards: row.cards || 0,
+  }));
 };
 
 export const deleteSet = async (setid: string) => {
@@ -60,57 +56,50 @@ export const deleteSet = async (setid: string) => {
 };
 
 export const getMySets = async (): Promise<{ id: string; set: Set; canEdit: boolean }[]> => {
-  const result = await executeSql(
+  const rows = await querySql(
     `SELECT DISTINCT s.*
      FROM sets s
      INNER JOIN user_sets us ON s.id = us.set_id
      ORDER BY us.created_at DESC`
   );
 
-  const sets: { id: string; set: Set; canEdit: boolean }[] = [];
-
-  for (let i = 0; i < result.rows.length; i++) {
-    const row = result.rows.item(i);
-    sets.push({
-      id: generateId(),
-      set: {
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        creator: row.creator,
-        cards: row.cards,
-      },
-      canEdit: true,
-    });
-  }
-
-  return sets;
+  return rows.map((row: any) => ({
+    id: generateId(),
+    set: {
+      id: row.id,
+      title: row.title || '',
+      description: row.description || '',
+      creator: row.creator || 'local-user',
+      cards: row.cards || 0,
+    },
+    canEdit: true,
+  }));
 };
 
 export const getSet = async (id: string): Promise<Set> => {
-  const result = await executeSql('SELECT * FROM sets WHERE id = ?', [id]);
+  const rows = await querySql('SELECT * FROM sets WHERE id = ?', [id]);
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new Error('Set not found');
   }
 
-  const row = result.rows.item(0);
+  const row = rows[0];
   return {
     id: row.id,
-    title: row.title,
-    description: row.description,
-    creator: row.creator,
-    cards: row.cards,
+    title: row.title || '',
+    description: row.description || '',
+    creator: row.creator || 'local-user',
+    cards: row.cards || 0,
   };
 };
 
 export const addToFavorites = async (setId: string) => {
-  const checkResult = await executeSql(
+  const checkRows = await querySql(
     'SELECT id FROM user_sets WHERE set_id = ?',
     [setId]
   );
 
-  if (checkResult.rows.length === 0) {
+  if (checkRows.length === 0) {
     const id = generateId();
     await executeSql(
       'INSERT INTO user_sets (id, set_id) VALUES (?, ?)',
@@ -122,65 +111,54 @@ export const addToFavorites = async (setId: string) => {
 };
 
 export const getLearnCards = async (setid: string, limit: string) => {
-  const result = await executeSql(
+  const rows = await querySql(
     'SELECT * FROM cards WHERE set_id = ? ORDER BY RANDOM() LIMIT ?',
     [setid, parseInt(limit)]
   );
 
-  const cards: Card[] = [];
-
-  for (let i = 0; i < result.rows.length; i++) {
-    const row = result.rows.item(i);
-    cards.push({
-      id: row.id,
-      question: row.question,
-      answer: row.answer,
-      set: row.set_id,
-    });
-  }
-
-  return cards;
+  return rows.map((row: any) => ({
+    id: row.id,
+    question: row.question || '',
+    answer: row.answer || '',
+    set: row.set_id,
+  }));
 };
 
 export const getCardsForSet = async (setid: string): Promise<Card[]> => {
-  const result = await executeSql(
+  const rows = await querySql(
     'SELECT * FROM cards WHERE set_id = ? ORDER BY created_at ASC',
     [setid]
   );
 
-  const cards: Card[] = [];
-
-  for (let i = 0; i < result.rows.length; i++) {
-    const row = result.rows.item(i);
-    cards.push({
-      id: row.id,
-      question: row.question,
-      answer: row.answer,
-      set: row.set_id,
-    });
-  }
-
-  return cards;
+  return rows.map((row: any) => ({
+    id: row.id,
+    question: row.question || '',
+    answer: row.answer || '',
+    set: row.set_id,
+  }));
 };
 
 export const createCard = async (card: Partial<Card>): Promise<Card> => {
   const id = generateId();
+  const setId = card.set || '';
+  const question = card.question || '';
+  const answer = card.answer || '';
 
   await executeSql(
     'INSERT INTO cards (id, set_id, question, answer) VALUES (?, ?, ?, ?)',
-    [id, card.set || '', card.question || '', card.answer || '']
+    [id, setId, question, answer]
   );
 
   await executeSql(
     'UPDATE sets SET cards = cards + 1 WHERE id = ?',
-    [card.set]
+    [setId]
   );
 
   return {
     id,
-    question: card.question || '',
-    answer: card.answer || '',
-    set: card.set || '',
+    question,
+    answer,
+    set: setId,
   };
 };
 
@@ -202,32 +180,25 @@ export const saveLearning = async (
 };
 
 export const getUserLearnings = async () => {
-  const result = await executeSql(
+  const rows = await querySql(
     `SELECT l.*, s.title, s.description, s.creator, s.cards
      FROM learnings l
      INNER JOIN sets s ON l.set_id = s.id
      ORDER BY l.created_at DESC`
   );
 
-  const learnings: any[] = [];
-
-  for (let i = 0; i < result.rows.length; i++) {
-    const row = result.rows.item(i);
-    learnings.push({
-      id: row.id,
-      score: row.score,
-      cards_correct: row.cards_correct,
-      cards_wrong: row.cards_wrong,
-      created_at: row.created_at,
-      set: {
-        id: row.set_id,
-        title: row.title,
-        description: row.description,
-        creator: row.creator,
-        cards: row.cards,
-      },
-    });
-  }
-
-  return learnings;
+  return rows.map((row: any) => ({
+    id: row.id,
+    score: row.score || 0,
+    cards_correct: row.cards_correct || 0,
+    cards_wrong: row.cards_wrong || 0,
+    created_at: row.created_at || '',
+    set: {
+      id: row.set_id,
+      title: row.title || '',
+      description: row.description || '',
+      creator: row.creator || 'local-user',
+      cards: row.cards || 0,
+    },
+  }));
 };
