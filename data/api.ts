@@ -1,5 +1,7 @@
 import { executeSql, querySql, generateId } from './database';
 
+export const USER_STORAGE_KEY = '@ankiapp:userId';
+
 export interface Set {
   cards: number;
   description: string;
