@@ -54,10 +54,15 @@ const Page = () => {
     loadCards();
   }, []);
 
-  // Rotate the card
-  const onShowAnswer = () => {
-    rotate.value = 1;
-    setShowFront(false);
+  // Toggle card flip
+  const onFlipCard = () => {
+    if (showFront) {
+      rotate.value = 1;
+      setShowFront(false);
+    } else {
+      rotate.value = 0;
+      setShowFront(true);
+    }
   };
 
   // Show next card
@@ -73,7 +78,7 @@ const Page = () => {
       }, 600);
     } else {
       setShowResult(true);
-      // Save the use rprogress
+      // Save the user progress
       const correctResult = correctCards + (correct ? 1 : 0);
       const wrongResult = wrongCards + (correct ? 0 : 1);
       saveLearning(id, +limit, correctResult, wrongResult);
@@ -105,18 +110,17 @@ const Page = () => {
             {currentIndex + 1} / {cards.length}
           </Text>
           <View style={styles.container}>
-            <Animated.View style={[styles.frontcard, frontAnimatedStyles]}>
-              <LearnCard card={cards[currentIndex]} isFront={true} textHidden={textHidden} />
-            </Animated.View>
-            <Animated.View style={[styles.backCard, backAnimatedStyles]}>
-              <LearnCard card={cards[currentIndex]} isFront={false} />
-            </Animated.View>
-
-            {showFront && (
-              <TouchableOpacity style={defaultStyleSheet.bottomButton} onPress={onShowAnswer}>
-                <Text style={defaultStyleSheet.buttonText}>Show answer</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity 
+              style={styles.cardContainer} 
+              onPress={onFlipCard}
+              activeOpacity={0.9}>
+              <Animated.View style={[styles.frontcard, frontAnimatedStyles]}>
+                <LearnCard card={cards[currentIndex]} isFront={true} textHidden={textHidden} />
+              </Animated.View>
+              <Animated.View style={[styles.backCard, backAnimatedStyles]}>
+                <LearnCard card={cards[currentIndex]} isFront={false} />
+              </Animated.View>
+            </TouchableOpacity>
 
             {!showFront && (
               <View style={styles.bottomView}>
@@ -144,6 +148,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     marginTop: 100,
+  },
+  cardContainer: {
+    position: 'relative',
   },
   frontcard: {
     position: 'absolute',
