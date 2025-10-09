@@ -37,6 +37,7 @@ const Page = () => {
   const [textHidden, setTextHidden] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [cardFlipTimestamp, setCardFlipTimestamp] = useState<number | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const [mode, setMode] = useState<PracticeMode>((initialMode as PracticeMode) || "fsrs");
   const [difficultyBand, setDifficultyBand] = useState<DifficultyBand>("Any");
@@ -57,7 +58,7 @@ const Page = () => {
     return {
       transform: [
         {
-          rotateY: withTiming(`${rotateValue}deg`, { duration: 600 }),
+          rotateY: `${rotateValue}deg`,
         },
         { translateX: translateX.value },
         { translateY: translateY.value },
@@ -70,7 +71,7 @@ const Page = () => {
     return {
       transform: [
         {
-          rotateY: withTiming(`${rotateValue}deg`, { duration: 600 }),
+          rotateY: `${rotateValue}deg`,
         },
         { translateX: translateX.value },
         { translateY: translateY.value },
@@ -79,14 +80,44 @@ const Page = () => {
   });
 
   const backgroundStyle = useAnimatedStyle(() => {
-    const opacity = Math.abs(translateX.value) / 150;
-    const backgroundColor =
-      translateX.value > 0
-        ? `rgba(34, 197, 94, ${Math.min(opacity, 0.3)})`
-        : `rgba(239, 68, 68, ${Math.min(opacity, 0.3)})`;
-
     return {
-      backgroundColor: translateX.value !== 0 ? backgroundColor : "transparent",
+      backgroundColor: "transparent",
+    };
+  });
+
+  const leftEdgeStyle = useAnimatedStyle(() => {
+    const opacity = Math.abs(translateX.value) / 100;
+    const clampedOpacity = Math.min(opacity, 0.7);
+    const scale = Math.min(Math.abs(translateX.value) / 50, 1.2);
+    
+    if (translateX.value >= 0) {
+      return {
+        opacity: 0,
+        transform: [{ scale: 0 }],
+      };
+    }
+    
+    return {
+      opacity: clampedOpacity,
+      transform: [{ scale }],
+    };
+  });
+
+  const rightEdgeStyle = useAnimatedStyle(() => {
+    const opacity = Math.abs(translateX.value) / 100;
+    const clampedOpacity = Math.min(opacity, 0.7);
+    const scale = Math.min(Math.abs(translateX.value) / 50, 1.2);
+    
+    if (translateX.value <= 0) {
+      return {
+        opacity: 0,
+        transform: [{ scale: 0 }],
+      };
+    }
+    
+    return {
+      opacity: clampedOpacity,
+      transform: [{ scale }],
     };
   });
 
@@ -106,11 +137,11 @@ const Page = () => {
 
   const onFlipCard = () => {
     if (showFront) {
-      rotate.value = 1;
+      rotate.value = withTiming(1, { duration: 600 });
       setShowFront(false);
       setCardFlipTimestamp(Date.now());
     } else {
-      rotate.value = 0;
+      rotate.value = withTiming(0, { duration: 600 });
       setShowFront(true);
       setCardFlipTimestamp(null);
     }
@@ -125,15 +156,22 @@ const Page = () => {
       else if (rating === Rating.Good) setGoodCount(goodCount + 1);
       else if (rating === Rating.Easy) setEasyCount(easyCount + 1);
 
-      rotate.value = 0;
+      // Set transitioning state to prevent unwanted animations
+      setIsTransitioning(true);
+      
+      // Reset all animation values and state before transitioning
+      rotate.value = 0; // Reset without animation
       translateX.value = 0;
       translateY.value = 0;
+      setShowFront(true);
+      setCardFlipTimestamp(null);
       setTextHidden(true);
+      
+      // Transition to next card after a brief delay
       setTimeout(() => {
         setCurrentIndex(currentIndex + 1);
         setTextHidden(false);
-        setShowFront(true);
-        setCardFlipTimestamp(null);
+        setIsTransitioning(false);
       }, 100);
     } else {
       setShowResult(true);
@@ -186,12 +224,14 @@ const Page = () => {
       startX.value = translateX.value;
     })
     .onUpdate((event) => {
+      // Allow swipe gestures on both front and back sides
       translateX.value = startX.value + event.translationX;
       translateY.value = event.translationY;
     })
     .onEnd((event) => {
       const threshold = 100;
-      if (Math.abs(event.translationX) > threshold && !showFront) {
+      // Process swipe if threshold is met (works on both front and back)
+      if (Math.abs(event.translationX) > threshold) {
         const swipeRight = event.translationX > 0;
         translateX.value = withSpring(swipeRight ? 500 : -500, {}, () => {
           runOnJS(processSwipeEnd)(event.translationX);
@@ -213,6 +253,11 @@ const Page = () => {
     setGoodCount(0);
     setEasyCount(0);
     setCardFlipTimestamp(null);
+    setIsTransitioning(false);
+    // Reset animation values
+    rotate.value = 0;
+    translateX.value = 0;
+    translateY.value = 0;
 
     if (newMode === "fsrs") {
       const dueCards = await getCardsDueForReview(id!);
@@ -230,6 +275,11 @@ const Page = () => {
     setCurrentIndex(0);
     setShowFront(true);
     setCardFlipTimestamp(null);
+    setIsTransitioning(false);
+    // Reset animation values
+    rotate.value = 0;
+    translateX.value = 0;
+    translateY.value = 0;
   };
 
   const handleCardCountChange = async (newCount: number) => {
@@ -239,6 +289,11 @@ const Page = () => {
     setCurrentIndex(0);
     setShowFront(true);
     setCardFlipTimestamp(null);
+    setIsTransitioning(false);
+    // Reset animation values
+    rotate.value = 0;
+    translateX.value = 0;
+    translateY.value = 0;
   };
 
   const handleContinue = () => {
@@ -251,6 +306,11 @@ const Page = () => {
     setGoodCount(0);
     setEasyCount(0);
     setCardFlipTimestamp(null);
+    setIsTransitioning(false);
+    // Reset animation values
+    rotate.value = 0;
+    translateX.value = 0;
+    translateY.value = 0;
     loadCards();
   };
 
@@ -375,6 +435,10 @@ const Page = () => {
                     <Animated.View style={[styles.backCard, backAnimatedStyles]}>
                       {displayCard && <LearnCard card={displayCard} isFront={false} />}
                     </Animated.View>
+                    
+                    {/* Enhanced edge indicators with blur effects */}
+                    <Animated.View style={[styles.leftEdgeIndicator, leftEdgeStyle]} />
+                    <Animated.View style={[styles.rightEdgeIndicator, rightEdgeStyle]} />
                   </TouchableOpacity>
                 </Animated.View>
               </GestureDetector>
@@ -499,6 +563,36 @@ const styles = StyleSheet.create({
   },
   backCard: {
     backfaceVisibility: "hidden",
+  },
+  leftEdgeIndicator: {
+    position: "absolute",
+    left: -25,
+    top: "50%",
+    width: 25,
+    height: 80,
+    backgroundColor: "#ef4444", // Red for Again
+    borderRadius: 12,
+    transform: [{ translateY: -40 }],
+    shadowColor: "#ef4444",
+    shadowOffset: { width: -5, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  rightEdgeIndicator: {
+    position: "absolute",
+    right: -25,
+    top: "50%",
+    width: 25,
+    height: 80,
+    backgroundColor: "#22c55e", // Green for Easy/Good
+    borderRadius: 12,
+    transform: [{ translateY: -40 }],
+    shadowColor: "#22c55e",
+    shadowOffset: { width: 5, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 8,
   },
   bottomView: {
     position: "absolute",
