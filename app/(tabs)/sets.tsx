@@ -8,60 +8,64 @@ import {
   RefreshControl,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { Set } from '@/data/api';
+import { Set, getSetDueCount } from '@/data/api';
 import { Link } from 'expo-router';
 import { getMySets } from '@/data/api';
 import { defaultStyleSheet } from '@/constants/Styles';
 
+interface SetWithDueCount {
+  id: string;
+  set: Set;
+  canEdit: boolean;
+  dueCount: number;
+}
+
 const Page = () => {
-  const [sets, setSets] = useState<{ id: string; set: Set; canEdit: boolean }[]>([]);
+  const [sets, setSets] = useState<SetWithDueCount[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     loadSets();
   }, []);
 
-  // Load user Sets
   const loadSets = async () => {
     const data = await getMySets();
-    setSets(data);
+    const setsWithDueCounts = await Promise.all(
+      data.map(async (item) => {
+        const dueCount = await getSetDueCount(item.set.id);
+        return { ...item, dueCount };
+      })
+    );
+    setSets(setsWithDueCounts);
   };
 
-  const renderSetRow: ListRenderItem<{ id: string; set: Set; canEdit: boolean }> = ({
-    item: { set, canEdit },
-  }) => {
+  const renderSetRow: ListRenderItem<SetWithDueCount> = ({ item: { set, canEdit, dueCount } }) => {
     return (
-      <View style={styles.setRow}>
-        <View style={{ flexDirection: 'row' }}>
+      <Link href={`/(learn)/${set.id}?mode=fsrs`} asChild>
+        <TouchableOpacity style={styles.setRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.rowTitle}>{set.title}</Text>
-            <View style={{ flexDirection: 'row', gap: 4, marginTop: 10 }}>
-              <Link href={`/(learn)/${set.id}?limit=3`} asChild>
-                <TouchableOpacity style={defaultStyleSheet.button}>
-                  <Text style={defaultStyleSheet.buttonText}>3 cards</Text>
-                </TouchableOpacity>
-              </Link>
-              <Link href={`/(learn)/${set.id}?limit=6`} asChild>
-                <TouchableOpacity style={defaultStyleSheet.button}>
-                  <Text style={defaultStyleSheet.buttonText}>6 cards</Text>
-                </TouchableOpacity>
-              </Link>
-              <Link href={`/(learn)/${set.id}?limit=10`} asChild>
-                <TouchableOpacity style={defaultStyleSheet.button}>
-                  <Text style={defaultStyleSheet.buttonText}>10 cards</Text>
-                </TouchableOpacity>
-              </Link>
-              {canEdit && (
-                <Link href={`/(modals)/(cards)/${set.id}`} asChild>
-                  <TouchableOpacity style={defaultStyleSheet.button}>
-                    <Text style={defaultStyleSheet.buttonText}>Edit</Text>
-                  </TouchableOpacity>
-                </Link>
+            <View style={styles.headerRow}>
+              <Text style={styles.rowTitle}>{set.title}</Text>
+              {dueCount > 0 && (
+                <View style={styles.dueBadge}>
+                  <Text style={styles.dueText}>{dueCount} due</Text>
+                </View>
               )}
             </View>
+            <Text style={styles.cardCount}>{set.cards} cards</Text>
+            {canEdit && (
+              <Link href={`/(modals)/(cards)/${set.id}`} asChild>
+                <TouchableOpacity
+                  style={[defaultStyleSheet.button, styles.editButton]}
+                  onPress={(e) => e.stopPropagation()}
+                >
+                  <Text style={defaultStyleSheet.buttonText}>Edit Cards</Text>
+                </TouchableOpacity>
+              </Link>
+            )}
           </View>
-        </View>
-      </View>
+        </TouchableOpacity>
+      </Link>
     );
   };
 
@@ -97,9 +101,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   rowTitle: {
     fontSize: 16,
     fontWeight: '500',
+    flex: 1,
+  },
+  dueBadge: {
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  dueText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cardCount: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  editButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
   },
 });
 

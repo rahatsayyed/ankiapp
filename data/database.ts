@@ -37,6 +37,34 @@ export const initDatabase = async () => {
           question TEXT NOT NULL,
           answer TEXT NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          due DATETIME DEFAULT CURRENT_TIMESTAMP,
+          stability REAL NOT NULL DEFAULT 0,
+          difficulty REAL NOT NULL DEFAULT 0,
+          elapsed_days INTEGER NOT NULL DEFAULT 0,
+          scheduled_days INTEGER NOT NULL DEFAULT 0,
+          learning_steps INTEGER NOT NULL DEFAULT 0,
+          reps INTEGER NOT NULL DEFAULT 0,
+          lapses INTEGER NOT NULL DEFAULT 0,
+          state INTEGER NOT NULL DEFAULT 0,
+          last_review DATETIME DEFAULT NULL,
+          FOREIGN KEY (set_id) REFERENCES sets (id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS card_review_logs (
+          id TEXT PRIMARY KEY NOT NULL,
+          card_id TEXT NOT NULL,
+          set_id TEXT NOT NULL,
+          rating INTEGER NOT NULL,
+          state INTEGER NOT NULL,
+          due DATETIME NOT NULL,
+          stability REAL NOT NULL,
+          difficulty REAL NOT NULL,
+          elapsed_days INTEGER NOT NULL,
+          last_elapsed_days INTEGER NOT NULL,
+          scheduled_days INTEGER NOT NULL,
+          review DATETIME NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (card_id) REFERENCES cards (id) ON DELETE CASCADE,
           FOREIGN KEY (set_id) REFERENCES sets (id) ON DELETE CASCADE
         );
 
@@ -47,6 +75,11 @@ export const initDatabase = async () => {
           cards_total INTEGER NOT NULL DEFAULT 0,
           cards_correct INTEGER NOT NULL DEFAULT 0,
           cards_wrong INTEGER NOT NULL DEFAULT 0,
+          again_count INTEGER NOT NULL DEFAULT 0,
+          hard_count INTEGER NOT NULL DEFAULT 0,
+          good_count INTEGER NOT NULL DEFAULT 0,
+          easy_count INTEGER NOT NULL DEFAULT 0,
+          average_rating REAL NOT NULL DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (set_id) REFERENCES sets (id) ON DELETE CASCADE
         );
@@ -57,6 +90,11 @@ export const initDatabase = async () => {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (set_id) REFERENCES sets (id) ON DELETE CASCADE
         );
+
+        CREATE INDEX IF NOT EXISTS idx_cards_due ON cards(due);
+        CREATE INDEX IF NOT EXISTS idx_cards_set_due ON cards(set_id, due);
+        CREATE INDEX IF NOT EXISTS idx_review_logs_card ON card_review_logs(card_id);
+        CREATE INDEX IF NOT EXISTS idx_review_logs_set_review ON card_review_logs(set_id, review);
       `);
 
       console.log('Database initialized successfully');
