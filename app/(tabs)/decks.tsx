@@ -8,53 +8,53 @@ import {
   RefreshControl,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { Set, getSetDueCount } from '@/data/api';
+import { Deck, getDeckDueCount } from '@/data/api';
 import { Link } from 'expo-router';
-import { getMySets } from '@/data/api';
+import { getMyDecks } from '@/data/api';
 import { defaultStyleSheet } from '@/constants/Styles';
 
-interface SetWithDueCount {
+interface DeckWithDueCount {
   id: string;
-  set: Set;
+  deck: Deck;
   canEdit: boolean;
   dueCount: number;
 }
 
 const Page = () => {
-  const [sets, setSets] = useState<SetWithDueCount[]>([]);
+  const [decks, setDecks] = useState<DeckWithDueCount[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    loadSets();
+    loadDecks();
   }, []);
 
-  const loadSets = async () => {
-    const data = await getMySets();
-    const setsWithDueCounts = await Promise.all(
+  const loadDecks = async () => {
+    const data = await getMyDecks();
+    const decksWithDueCounts = await Promise.all(
       data.map(async (item) => {
-        const dueCount = await getSetDueCount(item.set.id);
+        const dueCount = await getDeckDueCount(item.deck.id);
         return { ...item, dueCount };
       })
     );
-    setSets(setsWithDueCounts);
+    setDecks(decksWithDueCounts);
   };
 
-  const renderSetRow: ListRenderItem<SetWithDueCount> = ({ item: { set, canEdit, dueCount } }) => {
+  const renderDeckRow: ListRenderItem<DeckWithDueCount> = ({ item: { deck, canEdit, dueCount } }) => {
     return (
-      <Link href={`/(learn)/${set.id}?mode=fsrs`} asChild>
-        <TouchableOpacity style={styles.setRow}>
+      <Link href={`/(learn)/${deck.id}?mode=fsrs`} asChild>
+        <TouchableOpacity style={styles.deckRow}>
           <View style={{ flex: 1 }}>
             <View style={styles.headerRow}>
-              <Text style={styles.rowTitle}>{set.title}</Text>
+              <Text style={styles.rowTitle}>{deck.title}</Text>
               {dueCount > 0 && (
                 <View style={styles.dueBadge}>
                   <Text style={styles.dueText}>{dueCount} due</Text>
                 </View>
               )}
             </View>
-            <Text style={styles.cardCount}>{set.cards} cards</Text>
+            <Text style={styles.cardCount}>{deck.cards} cards</Text>
             {canEdit && (
-              <Link href={`/(modals)/(cards)/${set.id}`} asChild>
+              <Link href={`/(modals)/(cards)/${deck.id}`} asChild>
                 <TouchableOpacity
                   style={[defaultStyleSheet.button, styles.editButton]}
                   onPress={(e) => e.stopPropagation()}
@@ -71,21 +71,21 @@ const Page = () => {
 
   return (
     <View style={styles.container}>
-      {!sets.length && (
+      {!decks.length && (
         <Link href={'/(tabs)/search'} asChild>
           <TouchableOpacity style={{}}>
             <Text style={{ textAlign: 'center', padding: 20, color: '#3f3f3f' }}>
-              Add your first set!
+              Add your first deck!
             </Text>
           </TouchableOpacity>
         </Link>
       )}
 
       <FlatList
-        data={sets}
-        renderItem={renderSetRow}
+        data={decks}
+        renderItem={renderDeckRow}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={loadSets} />}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={loadDecks} />}
       />
     </View>
   );
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  setRow: {
+  deckRow: {
     margin: 8,
     padding: 16,
     backgroundColor: '#fff',

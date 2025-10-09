@@ -1,38 +1,38 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { addToFavorites, getSet, Set } from '@/data/api';
+import { addToFavorites, getDeck, Deck } from '@/data/api';
 import { defaultStyleSheet } from '../../../constants/Styles';
 
 const Page = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [set, setSet] = useState<Set>();
+  const [deck, setDeck] = useState<Deck>();
   const router = useRouter();
 
   useEffect(() => {
     if (!id) return;
 
-    const loadSet = async () => {
-      const data = await getSet(id);
-      setSet(data);
+    const loadDeck = async () => {
+      const data = await getDeck(id);
+      setDeck(data);
     };
-    loadSet();
+    loadDeck();
   }, [id]);
 
   // Add as a favorite and go back
   const onAddToFavorites = async () => {
     await addToFavorites(id!);
-    router.push('/(tabs)/sets');
+    router.push('/(tabs)/decks');
   };
 
   return (
     <View style={styles.container}>
-      {set && (
+      {deck && (
         <View style={{ alignItems: 'flex-start', padding: 16, gap: 10, flex: 1 }}>
-          <Text style={styles.header}>{set.title}</Text>
-          <Text style={{ color: '#666' }}>{set.cards} Cards</Text>
-          <Text>{set.description}</Text>
-          <Text style={{ color: '#666' }}>Created by: {set.creator}</Text>
+          <Text style={styles.header}>{deck.title}</Text>
+          <Text style={{ color: '#666' }}>{deck.cards} Cards</Text>
+          <Text>{deck.description}</Text>
+          <Text style={{ color: '#666' }}>Created by: {deck.creator}</Text>
         </View>
       )}
       <View style={{ alignItems: 'center' }}>

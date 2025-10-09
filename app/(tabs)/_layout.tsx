@@ -15,14 +15,14 @@ const Layout = () => {
         tabBarActiveTintColor: Colors.primary,
       }}>
       <Tabs.Screen
-        name="sets"
+        name="decks"
         options={{
-          title: 'My Sets',
+          title: 'My Decks',
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
           headerRight: () => (
-            <Link href={'/(modals)/set/create'} asChild>
+            <Link href={'/(modals)/deck/create'} asChild>
               <TouchableOpacity style={{ marginRight: 10 }}>
                 <Ionicons name="add-outline" size={24} color="#fff" />
               </TouchableOpacity>

@@ -259,7 +259,7 @@ const Page = () => {
         id: cards[currentIndex].id,
         question: cards[currentIndex].question,
         answer: cards[currentIndex].answer,
-        set: cards[currentIndex].set_id,
+        deck: cards[currentIndex].deck_id,
       }
     : null;
 
@@ -277,7 +277,7 @@ const Page = () => {
                 <Text style={defaultStyleSheet.buttonText}>Continue</Text>
               </TouchableOpacity>
             )}
-            <Link href={"/(tabs)/sets"} asChild>
+            <Link href={"/(tabs)/decks"} asChild>
               <TouchableOpacity style={defaultStyleSheet.bottomButton}>
                 <Text style={defaultStyleSheet.buttonText}>End session</Text>
               </TouchableOpacity>

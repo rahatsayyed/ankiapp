@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, TextInput } from "react-native";
 import React, { useState } from "react";
 import { defaultStyleSheet } from "@/constants/Styles";
-import { addToFavorites, createSet } from "@/data/api";
+import { addToFavorites, createDeck } from "@/data/api";
 import { useRouter } from "expo-router";
 
 const Page = () => {
@@ -11,10 +11,10 @@ const Page = () => {
     description: "",
   });
 
-  // Create set, add new favorite and go back
-  const onCreateSet = async () => {
-    const newSet = await createSet(information);
-    await addToFavorites(newSet.id!);
+  // Create deck, add new favorite and go back
+  const onCreateDeck = async () => {
+    const newDeck = await createDeck(information);
+    await addToFavorites(newDeck.id!);
     router.back();
   };
 
@@ -46,9 +46,9 @@ const Page = () => {
       <View style={{ alignItems: "center" }}>
         <TouchableOpacity
           style={defaultStyleSheet.bottomButton}
-          onPress={onCreateSet}
+          onPress={onCreateDeck}
         >
-          <Text style={defaultStyleSheet.buttonText}>Create Set</Text>
+          <Text style={defaultStyleSheet.buttonText}>Create Deck</Text>
         </TouchableOpacity>
       </View>
     </>

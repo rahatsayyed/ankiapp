@@ -14,7 +14,7 @@ import {
 
 export const USER_STORAGE_KEY = '@ankiapp:userId';
 
-export interface Set {
+export interface Deck {
   cards: number;
   description: string;
   creator: string;
@@ -26,19 +26,19 @@ export interface Card {
   answer: string;
   id: string;
   question: string;
-  set: string;
+  deck: string;
 }
 
 export { Rating, DifficultyBand };
 
-export const createSet = async (set: Partial<Set>): Promise<Set> => {
+export const createDeck = async (deck: Partial<Deck>): Promise<Deck> => {
   const id = generateId();
   const creator = 'local-user';
-  const title = set.title || '';
-  const description = set.description || '';
+  const title = deck.title || '';
+  const description = deck.description || '';
 
   await executeSql(
-    'INSERT INTO sets (id, title, description, creator, cards) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO decks (id, title, description, creator, cards) VALUES (?, ?, ?, ?, ?)',
     [id, title, description, creator, 0]
   );
 
@@ -51,8 +51,8 @@ export const createSet = async (set: Partial<Set>): Promise<Set> => {
   };
 };
 
-export const getSets = async (): Promise<Set[]> => {
-  const rows = await querySql('SELECT * FROM sets ORDER BY created_at DESC');
+export const getDecks = async (): Promise<Deck[]> => {
+  const rows = await querySql('SELECT * FROM decks ORDER BY created_at DESC');
 
   return rows.map((row: any) => ({
     id: row.id,
@@ -63,25 +63,25 @@ export const getSets = async (): Promise<Set[]> => {
   }));
 };
 
-export const deleteSet = async (setid: string) => {
-  await executeSql('DELETE FROM cards WHERE set_id = ?', [setid]);
-  await executeSql('DELETE FROM learnings WHERE set_id = ?', [setid]);
-  await executeSql('DELETE FROM user_sets WHERE set_id = ?', [setid]);
-  await executeSql('DELETE FROM sets WHERE id = ?', [setid]);
+export const deleteDeck = async (deckId: string) => {
+  await executeSql('DELETE FROM cards WHERE deck_id = ?', [deckId]);
+  await executeSql('DELETE FROM learnings WHERE deck_id = ?', [deckId]);
+  await executeSql('DELETE FROM user_decks WHERE deck_id = ?', [deckId]);
+  await executeSql('DELETE FROM decks WHERE id = ?', [deckId]);
   return { success: true };
 };
 
-export const getMySets = async (): Promise<{ id: string; set: Set; canEdit: boolean }[]> => {
+export const getMyDecks = async (): Promise<{ id: string; deck: Deck; canEdit: boolean }[]> => {
   const rows = await querySql(
-    `SELECT DISTINCT s.*
-     FROM sets s
-     INNER JOIN user_sets us ON s.id = us.set_id
-     ORDER BY us.created_at DESC`
+    `SELECT DISTINCT d.*
+     FROM decks d
+     INNER JOIN user_decks ud ON d.id = ud.deck_id
+     ORDER BY ud.created_at DESC`
   );
 
   return rows.map((row: any) => ({
     id: generateId(),
-    set: {
+    deck: {
       id: row.id,
       title: row.title || '',
       description: row.description || '',
@@ -92,11 +92,11 @@ export const getMySets = async (): Promise<{ id: string; set: Set; canEdit: bool
   }));
 };
 
-export const getSet = async (id: string): Promise<Set> => {
-  const rows = await querySql('SELECT * FROM sets WHERE id = ?', [id]);
+export const getDeck = async (id: string): Promise<Deck> => {
+  const rows = await querySql('SELECT * FROM decks WHERE id = ?', [id]);
 
   if (rows.length === 0) {
-    throw new Error('Set not found');
+    throw new Error('Deck not found');
   }
 
   const row = rows[0];
@@ -109,54 +109,54 @@ export const getSet = async (id: string): Promise<Set> => {
   };
 };
 
-export const addToFavorites = async (setId: string) => {
+export const addToFavorites = async (deckId: string) => {
   const checkRows = await querySql(
-    'SELECT id FROM user_sets WHERE set_id = ?',
-    [setId]
+    'SELECT id FROM user_decks WHERE deck_id = ?',
+    [deckId]
   );
 
   if (checkRows.length === 0) {
     const id = generateId();
     await executeSql(
-      'INSERT INTO user_sets (id, set_id) VALUES (?, ?)',
-      [id, setId]
+      'INSERT INTO user_decks (id, deck_id) VALUES (?, ?)',
+      [id, deckId]
     );
   }
 
   return { success: true };
 };
 
-export const getLearnCards = async (setid: string, limit: string) => {
+export const getLearnCards = async (deckId: string, limit: string) => {
   const rows = await querySql(
-    'SELECT * FROM cards WHERE set_id = ? ORDER BY RANDOM() LIMIT ?',
-    [setid, parseInt(limit)]
+    'SELECT * FROM cards WHERE deck_id = ? ORDER BY RANDOM() LIMIT ?',
+    [deckId, parseInt(limit)]
   );
 
   return rows.map((row: any) => ({
     id: row.id,
     question: row.question || '',
     answer: row.answer || '',
-    set: row.set_id,
+    deck: row.deck_id,
   }));
 };
 
-export const getCardsForSet = async (setid: string): Promise<Card[]> => {
+export const getCardsForDeck = async (deckId: string): Promise<Card[]> => {
   const rows = await querySql(
-    'SELECT * FROM cards WHERE set_id = ? ORDER BY created_at ASC',
-    [setid]
+    'SELECT * FROM cards WHERE deck_id = ? ORDER BY created_at ASC',
+    [deckId]
   );
 
   return rows.map((row: any) => ({
     id: row.id,
     question: row.question || '',
     answer: row.answer || '',
-    set: row.set_id,
+    deck: row.deck_id,
   }));
 };
 
 export const createCard = async (card: Partial<Card>): Promise<Card> => {
   const id = generateId();
-  const setId = card.set || '';
+  const deckId = card.deck || '';
   const question = card.question || '';
   const answer = card.answer || '';
 
@@ -165,13 +165,13 @@ export const createCard = async (card: Partial<Card>): Promise<Card> => {
 
   await executeSql(
     `INSERT INTO cards (
-      id, set_id, question, answer,
+      id, deck_id, question, answer,
       due, stability, difficulty, elapsed_days, scheduled_days,
       learning_steps, reps, lapses, state, last_review
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
-      setId,
+      deckId,
       question,
       answer,
       fsrsData.due!,
@@ -188,20 +188,20 @@ export const createCard = async (card: Partial<Card>): Promise<Card> => {
   );
 
   await executeSql(
-    'UPDATE sets SET cards = cards + 1 WHERE id = ?',
-    [setId]
+    'UPDATE decks SET cards = cards + 1 WHERE id = ?',
+    [deckId]
   );
 
   return {
     id,
     question,
     answer,
-    set: setId,
+    deck: deckId,
   };
 };
 
 export const saveLearning = async (
-  setid: string,
+  deckId: string,
   cardsTotal: number,
   correct: number,
   wrong: number,
@@ -219,10 +219,10 @@ export const saveLearning = async (
 
   await executeSql(
     `INSERT INTO learnings (
-      id, set_id, score, cards_total, cards_correct, cards_wrong,
+      id, deck_id, score, cards_total, cards_correct, cards_wrong,
       again_count, hard_count, good_count, easy_count, average_rating
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, setid, score, cardsTotal, correct, wrong, againCount, hardCount, goodCount, easyCount, averageRating]
+    [id, deckId, score, cardsTotal, correct, wrong, againCount, hardCount, goodCount, easyCount, averageRating]
   );
 
   return { success: true };
@@ -230,9 +230,9 @@ export const saveLearning = async (
 
 export const getUserLearnings = async () => {
   const rows = await querySql(
-    `SELECT l.*, s.title, s.description, s.creator, s.cards
+    `SELECT l.*, d.title, d.description, d.creator, d.cards
      FROM learnings l
-     INNER JOIN sets s ON l.set_id = s.id
+     INNER JOIN decks d ON l.deck_id = d.id
      ORDER BY l.created_at DESC`
   );
 
@@ -247,8 +247,8 @@ export const getUserLearnings = async () => {
     easy_count: row.easy_count || 0,
     average_rating: row.average_rating || 0,
     created_at: row.created_at || '',
-    set: {
-      id: row.set_id,
+    deck: {
+      id: row.deck_id,
       title: row.title || '',
       description: row.description || '',
       creator: row.creator || 'local-user',
@@ -257,32 +257,32 @@ export const getUserLearnings = async () => {
   }));
 };
 
-export const getCardsDueForReview = async (setId: string): Promise<DBCard[]> => {
+export const getCardsDueForReview = async (deckId: string): Promise<DBCard[]> => {
   const now = new Date().toISOString();
   const rows = await querySql(
-    'SELECT * FROM cards WHERE set_id = ? AND due <= ? ORDER BY due ASC',
-    [setId, now]
+    'SELECT * FROM cards WHERE deck_id = ? AND due <= ? ORDER BY due ASC',
+    [deckId, now]
   );
   return rows as DBCard[];
 };
 
-export const getSetDueCount = async (setId: string): Promise<number> => {
+export const getDeckDueCount = async (deckId: string): Promise<number> => {
   const now = new Date().toISOString();
   const rows = await querySql(
-    'SELECT COUNT(*) as count FROM cards WHERE set_id = ? AND due <= ?',
-    [setId, now]
+    'SELECT COUNT(*) as count FROM cards WHERE deck_id = ? AND due <= ?',
+    [deckId, now]
   );
   return rows[0]?.count || 0;
 };
 
 export const getCardsByDifficultyBand = async (
-  setId: string,
+  deckId: string,
   band: DifficultyBand,
   limit: number
 ): Promise<DBCard[]> => {
   const allCards = await querySql(
-    'SELECT * FROM cards WHERE set_id = ? ORDER BY RANDOM()',
-    [setId]
+    'SELECT * FROM cards WHERE deck_id = ? ORDER BY RANDOM()',
+    [deckId]
   );
 
   if (band === 'Any') {
@@ -301,7 +301,7 @@ export const getCardsByDifficultyBand = async (
 
 export const updateCardAfterReview = async (
   cardId: string,
-  setId: string,
+  deckId: string,
   rating: Rating,
   now: Date = new Date()
 ): Promise<void> => {
@@ -344,13 +344,13 @@ export const updateCardAfterReview = async (
   const logId = generateId();
   await executeSql(
     `INSERT INTO card_review_logs (
-      id, card_id, set_id, rating, state, due, stability, difficulty,
+      id, card_id, deck_id, rating, state, due, stability, difficulty,
       elapsed_days, last_elapsed_days, scheduled_days, review
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       logId,
       cardId,
-      setId,
+      deckId,
       log.rating,
       log.state,
       log.due.toISOString(),

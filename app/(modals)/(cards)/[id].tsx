@@ -1,7 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Card, createCard, deleteSet, getCardsForSet } from '@/data/api';
+import { Card, createCard, deleteDeck, getCardsForDeck } from '@/data/api';
 import { defaultStyleSheet } from '@/constants/Styles';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,14 +18,14 @@ const Page = () => {
     if (!id) return;
 
     const loadCards = async () => {
-      const data = await getCardsForSet(id);
+      const data = await getCardsForDeck(id);
       setCards(data);
     };
     loadCards();
   }, [id]);
 
   const onAddCard = async () => {
-    const newCard = await createCard({ set: id, ...information });
+    const newCard = await createCard({ deck: id, ...information });
     setCards([...cards, newCard]);
     setInformation({
       question: '',
@@ -33,8 +33,8 @@ const Page = () => {
     });
   };
 
-  const onDeleteSet = async () => {
-    deleteSet(id!);
+  const onDeleteDeck = async () => {
+    deleteDeck(id!);
     router.back();
   };
 
@@ -43,7 +43,7 @@ const Page = () => {
       <Stack.Screen
         options={{
           headerRight: () => (
-            <TouchableOpacity onPress={onDeleteSet}>
+            <TouchableOpacity onPress={onDeleteDeck}>
               <Ionicons name="trash-outline" size={24} color="#fff" />
             </TouchableOpacity>
           ),

@@ -22,7 +22,7 @@ export const initDatabase = async () => {
       await db.execAsync(`
         PRAGMA journal_mode = WAL;
 
-        CREATE TABLE IF NOT EXISTS sets (
+        CREATE TABLE IF NOT EXISTS decks (
           id TEXT PRIMARY KEY NOT NULL,
           title TEXT NOT NULL,
           description TEXT NOT NULL DEFAULT '',
@@ -33,7 +33,7 @@ export const initDatabase = async () => {
 
         CREATE TABLE IF NOT EXISTS cards (
           id TEXT PRIMARY KEY NOT NULL,
-          set_id TEXT NOT NULL,
+          deck_id TEXT NOT NULL,
           question TEXT NOT NULL,
           answer TEXT NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -47,13 +47,13 @@ export const initDatabase = async () => {
           lapses INTEGER NOT NULL DEFAULT 0,
           state INTEGER NOT NULL DEFAULT 0,
           last_review DATETIME DEFAULT NULL,
-          FOREIGN KEY (set_id) REFERENCES sets (id) ON DELETE CASCADE
+          FOREIGN KEY (deck_id) REFERENCES decks (id) ON DELETE CASCADE
         );
 
         CREATE TABLE IF NOT EXISTS card_review_logs (
           id TEXT PRIMARY KEY NOT NULL,
           card_id TEXT NOT NULL,
-          set_id TEXT NOT NULL,
+          deck_id TEXT NOT NULL,
           rating INTEGER NOT NULL,
           state INTEGER NOT NULL,
           due DATETIME NOT NULL,
@@ -65,12 +65,12 @@ export const initDatabase = async () => {
           review DATETIME NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (card_id) REFERENCES cards (id) ON DELETE CASCADE,
-          FOREIGN KEY (set_id) REFERENCES sets (id) ON DELETE CASCADE
+          FOREIGN KEY (deck_id) REFERENCES decks (id) ON DELETE CASCADE
         );
 
         CREATE TABLE IF NOT EXISTS learnings (
           id TEXT PRIMARY KEY NOT NULL,
-          set_id TEXT NOT NULL,
+          deck_id TEXT NOT NULL,
           score REAL NOT NULL DEFAULT 0,
           cards_total INTEGER NOT NULL DEFAULT 0,
           cards_correct INTEGER NOT NULL DEFAULT 0,
@@ -81,20 +81,20 @@ export const initDatabase = async () => {
           easy_count INTEGER NOT NULL DEFAULT 0,
           average_rating REAL NOT NULL DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (set_id) REFERENCES sets (id) ON DELETE CASCADE
+          FOREIGN KEY (deck_id) REFERENCES decks (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS user_sets (
+        CREATE TABLE IF NOT EXISTS user_decks (
           id TEXT PRIMARY KEY NOT NULL,
-          set_id TEXT NOT NULL,
+          deck_id TEXT NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (set_id) REFERENCES sets (id) ON DELETE CASCADE
+          FOREIGN KEY (deck_id) REFERENCES decks (id) ON DELETE CASCADE
         );
 
         CREATE INDEX IF NOT EXISTS idx_cards_due ON cards(due);
-        CREATE INDEX IF NOT EXISTS idx_cards_set_due ON cards(set_id, due);
+        CREATE INDEX IF NOT EXISTS idx_cards_deck_due ON cards(deck_id, due);
         CREATE INDEX IF NOT EXISTS idx_review_logs_card ON card_review_logs(card_id);
-        CREATE INDEX IF NOT EXISTS idx_review_logs_set_review ON card_review_logs(set_id, review);
+        CREATE INDEX IF NOT EXISTS idx_review_logs_deck_review ON card_review_logs(deck_id, review);
       `);
 
       console.log('Database initialized successfully');

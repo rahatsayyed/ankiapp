@@ -13,7 +13,7 @@ const f = fsrs(params);
 
 export interface DBCard {
   id: string;
-  set_id: string;
+  deck_id: string;
   question: string;
   answer: string;
   created_at: string;
